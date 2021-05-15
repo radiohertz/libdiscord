@@ -1,5 +1,7 @@
+#define _GNU_SOURCE
 #include "libdiscord/types.h"
 #include "libdiscord/wsc.h"
+#include "stdio.h"
 #include "string.h"
 #include <jansson.h>
 #include <libdiscord/bot.h>
@@ -37,11 +39,74 @@ typedef struct {
   int s;
 } shared_state;
 
-void *heartbeat_thread(void *shared_data) {}
+void *heartbeat_thread(void *shared_data) {
+
+  shared_state *state = shared_data;
+
+  while (1) {
+    sleep(state->heartbeat_interval / 1000);
+
+    json_t *hb_json = json_object();
+    json_object_set_new(hb_json, "op", json_integer(1));
+    if (!state->s)
+      json_object_set_new(hb_json, "d", json_null());
+    else
+      json_object_set_new(hb_json, "d", json_integer(state->s));
+
+    char *payload = json_dumps(hb_json, 0);
+    json_decref(hb_json);
+
+    send_frame(state->conn, TEXT, payload, strlen(payload));
+    free(payload);
+  }
+}
+
+message_t parse_message(json_t *d) {
+  message_t msg = {};
+
+  asprintf(&msg.id, "%s", json_string_value(json_object_get(d, "id")));
+  asprintf(&msg.channel_id, "%s",
+           json_string_value(json_object_get(d, "channel_id")));
+
+  json_t *guild_j = json_object_get(d, "guild_id");
+  if (!json_is_null(guild_j)) {
+    asprintf(&msg.guild_id, "%s", json_string_value(guild_j));
+  }
+  json_decref(guild_j);
+
+  asprintf(&msg.content, "%s",
+           json_string_value(json_object_get(d, "content")));
+
+  asprintf(&msg.timestamp, "%s",
+           json_string_value(json_object_get(d, "timestamp")));
+
+  msg.tts = json_boolean_value(json_object_get(d, "tts"));
+  msg.mention_everyone =
+      json_boolean_value(json_object_get(d, "mention_everyone"));
+  msg.pinned = json_boolean_value(json_object_get(d, "pinned"));
+  msg.type = json_integer_value(json_object_get(d, "type"));
+
+  json_decref(d);
+  return msg;
+}
+
+void free_message_t(message_t *msg) {
+  if (msg->channel_id)
+    free(msg->channel_id);
+  if (msg->content)
+    free(msg->content);
+  if (msg->guild_id)
+    free(msg->guild_id);
+  if (msg->id)
+    free(msg->id);
+  if (msg->timestamp)
+    free(msg->timestamp);
+}
 
 void run(bot_t *bot) {
 
   ws_conn_t conn = {.uri = "gateway.discord.gg", .port = "443"};
+  conn.debug = false;
 
   handshake(&conn, "/?v=9&encoding=json");
 
@@ -104,9 +169,47 @@ void run(bot_t *bot) {
   free(identify_payload);
   ws_frame *ready_frame = read_frame(&conn);
 
-  printf("Read from : %s\n", ready_frame->payload);
-
+  // TOO lazy to parse the ready frame.
+  // Send in a PR pls.
   free_frame(ready_frame);
+
+  while (1) {
+    ws_frame *frame = read_frame(&conn);
+
+    json_t *root = json_loads(frame->payload, 0, &ec);
+    free_frame(frame);
+    if (!root) {
+      printf("Failed parsing json: %d - %s\n", ec.line, ec.text);
+      continue;
+    }
+
+    json_t *event_type = json_object_get(root, "t");
+    bool is_null = json_is_null(event_type);
+
+    int op = json_integer_value(json_object_get(root, "op"));
+    int seq = json_integer_value(json_object_get(root, "s"));
+
+    if (is_null && op == 11) {
+      json_decref(event_type);
+      continue;
+    }
+    s.s = seq;
+
+    const char *type = json_string_value(event_type);
+
+    if (strcmp(type, "MESSAGE_CREATE") == 0) {
+      message_t msg = parse_message(json_object_get(root, "d"));
+      if (bot->on_msg) {
+        printf("Legit\n");
+        bot->on_msg(bot, msg);
+      }
+      free_message_t(&msg);
+    } else if (strcmp(type, "MESSAGE_UPDATE") == 0) {
+    }
+
+    json_decref(event_type);
+    json_decref(root);
+  }
 
   ws_close(&conn);
 }

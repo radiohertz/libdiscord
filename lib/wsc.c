@@ -186,7 +186,8 @@ ws_frame *read_frame(ws_conn_t *conn) {
   char *payload = (char *)calloc(payload_len, sizeof(char));
   int read_bytes = SSL_read(conn->ssl, payload, payload_len);
 
-  printf("Read from socket: %d\n", read_bytes);
+  if (conn->debug)
+    printf("Read from socket: %d\n", read_bytes);
 
   while (read_bytes != payload_len) {
     int bytes_left_to_read = payload_len - read_bytes;

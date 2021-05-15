@@ -11,7 +11,4 @@ void free_bot(bot_t *bot);
 // Start the bot.
 void run(bot_t *bot);
 
-// function is called on `MESSAGE_CREATE`.
-void on_message(bot_t *bot, const char *msg);
-
 #endif
