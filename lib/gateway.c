@@ -5,6 +5,7 @@
 #include "string.h"
 #include <jansson.h>
 #include <libdiscord/bot.h>
+#include <libdiscord/gateway.h>
 #include <pthread.h>
 #include <unistd.h>
 
@@ -108,6 +109,8 @@ void run(bot_t *bot) {
   ws_conn_t conn = {.uri = "gateway.discord.gg", .port = "443"};
   conn.debug = false;
 
+  bot->_conn = &conn;
+
   handshake(&conn, "/?v=9&encoding=json");
 
   ws_frame *hello_frame = read_frame(&conn);
@@ -177,7 +180,7 @@ void run(bot_t *bot) {
     ws_frame *frame = read_frame(&conn);
 
     json_t *root = json_loads(frame->payload, 0, &ec);
-    free_frame(frame);
+    // free_frame(frame);
     if (!root) {
       printf("Failed parsing json: %d - %s\n", ec.line, ec.text);
       continue;
@@ -205,6 +208,9 @@ void run(bot_t *bot) {
       }
       free_message_t(&msg);
     } else if (strcmp(type, "MESSAGE_UPDATE") == 0) {
+    } else {
+
+      printf("unimplemented event: %s\n", frame->payload);
     }
 
     json_decref(event_type);
@@ -212,4 +218,53 @@ void run(bot_t *bot) {
   }
 
   ws_close(&conn);
+}
+
+void set_activity(bot_t *bot, presence_t *presence) {
+  if (!presence)
+    return;
+
+  json_t *root = json_object();
+  json_object_set_new(root, "op", json_integer(3));
+
+  json_t *d = json_object();
+  if (presence->since)
+    json_object_set_new(d, "since", json_integer(presence->since));
+  else
+    json_object_set_new(d, "since", json_null());
+
+  json_object_set_new(d, "afk", json_boolean(presence->afk));
+  json_object_set_new(d, "status", json_string(presence->status));
+
+  json_t *acts = NULL;
+  json_t *act = NULL;
+  acts = json_array();
+
+  act = json_object();
+
+  json_object_set_new(act, "name", json_string(presence->activities.name));
+  json_object_set_new(act, "type", json_integer(presence->activities.type));
+
+  json_object_set(d, "activities", acts);
+  json_array_append(acts, act);
+
+  json_object_set(root, "d", d);
+
+  char *payload = json_dumps(root, 0);
+  printf("%s\n", payload);
+
+  if (act)
+    json_decref(act);
+
+  if (acts)
+    json_decref(acts);
+
+  json_decref(d);
+  json_decref(root);
+
+  printf("Data: %s\n", payload);
+
+  send_frame(bot->_conn, TEXT, payload, strlen(payload));
+  free(payload);
+  printf("Sent \n");
 }

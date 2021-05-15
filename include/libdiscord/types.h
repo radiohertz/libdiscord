@@ -1,6 +1,7 @@
 #ifndef _LIBDISCORD_TYPES_H
 #define _LIBDISCORD_TYPES_H
 #include "wsc.h"
+#include <stdint.h>
 
 typedef struct bot_t bot_t;
 
@@ -61,6 +62,27 @@ typedef struct {
   int shard[2];
   application_t application;
 } ready_t;
+
+typedef struct {
+  char *title;
+  char *type;
+  char *description;
+  char *url;
+  char *timestamp;
+  int color;
+} embed_t;
+
+typedef struct {
+  char *name;
+  uint8_t type;
+} activity_t;
+
+typedef struct {
+  int since;
+  char *status;
+  bool afk;
+  activity_t activities;
+} presence_t;
 
 typedef enum {
 
