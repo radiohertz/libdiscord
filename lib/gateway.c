@@ -107,7 +107,7 @@ void free_message_t(message_t *msg) {
 void run(bot_t *bot) {
 
   ws_conn_t conn = {.uri = "gateway.discord.gg", .port = "443"};
-  conn.debug = false;
+  conn.debug = true;
 
   bot->_conn = &conn;
 
@@ -203,7 +203,6 @@ void run(bot_t *bot) {
     if (strcmp(type, "MESSAGE_CREATE") == 0) {
       message_t msg = parse_message(json_object_get(root, "d"));
       if (bot->on_msg) {
-        printf("Legit\n");
         bot->on_msg(bot, msg);
       }
       free_message_t(&msg);
@@ -266,5 +265,4 @@ void set_activity(bot_t *bot, presence_t *presence) {
 
   send_frame(bot->_conn, TEXT, payload, strlen(payload));
   free(payload);
-  printf("Sent \n");
 }

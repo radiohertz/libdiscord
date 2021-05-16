@@ -5,11 +5,13 @@
 #include <string.h>
 
 void msg(bot_t *bot, message_t msg) {
+
   if (strcmp(msg.content, "$ping") == 0) {
-    printf("Got : %s from channel: %s\n", msg.content, msg.channel_id);
     create_message(bot, "pong!", msg.channel_id, NULL);
+
   } else if (strstr(msg.content, "nice") != NULL) {
     create_message(bot, "( ͡° ͜ʖ ͡°)", msg.channel_id, NULL);
+
   } else if (strcmp(msg.content, "makemd") == 0) {
     embed_t *emd =
         make_embed("Hello world",
@@ -19,8 +21,8 @@ void msg(bot_t *bot, message_t msg) {
                    "and Philip Selway. They have worked with producer Nigel "
                    "Godrich and cover artist Stanley Donwood since 1994",
                    "rich", NULL, NULL, 0x254873);
-    printf("Fault after getting emb\n");
     create_message(bot, "Wow, an embed!!", msg.channel_id, emd);
+
   } else if (strstr(msg.content, "setpr") != NULL) {
     presence_t pr = {};
     pr.afk = false;

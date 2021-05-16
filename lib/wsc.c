@@ -10,8 +10,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-void mask_payload(uint8_t *payload, uint8_t key[4], size_t payload_len);
-
+// Start the websocket handshake.
 void handshake(ws_conn_t *conn, const char *query_params) {
 
   SSL_library_init();
@@ -105,6 +104,7 @@ void handshake(ws_conn_t *conn, const char *query_params) {
   SSL_CTX_free(ctx);
 }
 
+// Send a frame to the `ws` endpoint.
 void send_frame(ws_conn_t *conn, ws_opcode op, char *payload,
                 size_t payload_len) {
 
@@ -113,7 +113,6 @@ void send_frame(ws_conn_t *conn, ws_opcode op, char *payload,
 
   int len = 0;
   if (payload_len < 126) {
-    printf("Smol payload\n");
     op_and_len[1] = (1 << 7) | payload_len;
     SSL_write(conn->ssl, op_and_len, 2);
   } else if (payload_len <= UINT16_MAX) {
@@ -149,6 +148,7 @@ void send_frame(ws_conn_t *conn, ws_opcode op, char *payload,
   SSL_write(conn->ssl, payload, payload_len);
 }
 
+// Read a frame from the `ws` endpoint.
 ws_frame *read_frame(ws_conn_t *conn) {
 
   char op_and_len[2];
@@ -221,6 +221,7 @@ void free_frame(ws_frame *frame) {
   free(frame);
 }
 
+// Send a ping frame.
 bool ping(ws_conn_t *conn) {
   char ping_msg[] = "ping";
 
@@ -231,6 +232,7 @@ bool ping(ws_conn_t *conn) {
   return true;
 }
 
+// Close the websocket connection.
 void ws_close(ws_conn_t *conn) {
   // send close frame.
 
@@ -255,6 +257,7 @@ void ws_close(ws_conn_t *conn) {
   SSL_free(conn->ssl);
 }
 
+// Mask the payload in place.
 void mask_payload(uint8_t *payload, uint8_t key[4], size_t payload_len) {
   for (int i = 0; i < payload_len; i++) {
     payload[i] ^= key[i % 4];
