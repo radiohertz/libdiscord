@@ -183,7 +183,7 @@ ws_frame *read_frame(ws_conn_t *conn) {
     printf("[READ]: Fin: %hhu,Opcode: %hhu, Payload_Length: %ld, ", is_fin, op,
            payload_len);
 
-  char *payload = (char *)calloc(payload_len, sizeof(char));
+  char *payload = (char *)calloc(payload_len + 1, sizeof(char));
   int read_bytes = SSL_read(conn->ssl, payload, payload_len);
 
   if (conn->debug)
@@ -194,6 +194,9 @@ ws_frame *read_frame(ws_conn_t *conn) {
     int more = SSL_read(conn->ssl, &payload[read_bytes], bytes_left_to_read);
     read_bytes += more;
   }
+
+  if (op == TEXT)
+    payload[payload_len] = '\0';
 
   if (conn->debug)
     printf("Payload: %s\n", payload);

@@ -17,6 +17,8 @@ typedef struct {
   bool pinned;
   int type;
 
+  // Need to include all the fields.
+
 } message_t;
 
 typedef void(on_message)(bot_t *bot, message_t msg);

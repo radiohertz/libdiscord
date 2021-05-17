@@ -47,7 +47,7 @@ void free_embed(embed_t *emd) {
 }
 
 void create_message(bot_t *bot, const char *msg, const char *channel_id,
-                    embed_t *emd) {
+                    embed_t *emd, message_t *reply_to) {
 
   CURL *curl;
   CURLcode res;
@@ -97,13 +97,26 @@ void create_message(bot_t *bot, const char *msg, const char *channel_id,
         json_object_set_new(emb_json, "color", json_integer(emd->color));
 
       json_object_set(payload, "embed", emb_json);
+    }
 
-      free_embed(emd);
+    json_t *msg_ref = NULL;
+    if (reply_to) {
+      msg_ref = json_object();
+
+      json_object_set(msg_ref, "message_id", json_string(reply_to->id));
+      json_object_set(msg_ref, "guild_id", json_string(reply_to->guild_id));
+
+      json_object_set(payload, "message_reference", msg_ref);
     }
 
     char *msg_data = json_dumps(payload, 0);
+
     if (emb_json)
       json_decref(emb_json);
+
+    if (msg_ref)
+      json_decref(msg_ref);
+
     json_decref(payload);
 
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, msg_data);
