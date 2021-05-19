@@ -1,10 +1,11 @@
-#include "libdiscord/gateway.h"
-#include "libdiscord/wsc.h"
+#include <libdiscord/gateway.h>
+#include <libdiscord/wsc.h>
 #include <libdiscord/bot.h>
 #include <libdiscord/rest.h>
 #include <libdiscord/types.h>
 #include <string.h>
 #include <sys/time.h>
+
 
 void msg(bot_t *bot, message_t msg) {
 
