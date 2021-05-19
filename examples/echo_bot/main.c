@@ -6,7 +6,6 @@
 #include <string.h>
 #include <sys/time.h>
 
-#define TOKEN "NzQzNzE3MzA4NTM4ODE0NDY1.XzYutw.TeRF38v_cWzjhpHziY5htEecy2Y"
 
 void msg(bot_t *bot, message_t msg) {
 
@@ -47,9 +46,9 @@ void msg(bot_t *bot, message_t msg) {
 
 int main() {
 
-  // const char *token = getenv("TOKEN");
+  const char *token = getenv("TOKEN");
 
-  bot_t *bot = make_bot(TOKEN, GUILD_MESSAGES);
+  bot_t *bot = make_bot(token, GUILD_MESSAGES);
   bot->on_msg = msg;
 
   run(bot);
