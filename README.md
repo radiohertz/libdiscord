@@ -6,6 +6,9 @@ A C Library for building discord bots.
 
 - GCC
 - Make
+- OpenSSL
+- Pthreads
+- jansson
 
 # Installation libdiscord
 
